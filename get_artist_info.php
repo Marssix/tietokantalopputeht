@@ -1,10 +1,7 @@
 <?php
 require "dbconnection.php";
-$dbcon = createDbConnection();
 
-if (isset($_GET['artist_id'])) {
-    $artist_id = $_GET['artist_id'];
-
+function getAlbumsByArtistId($dbcon, $artist_id) {
     $stmt = $dbcon->prepare(
         "SELECT artists.Name AS artist_name, albums.AlbumId, albums.Title AS album_title, tracks.Name AS track_name
          FROM artists
@@ -19,29 +16,31 @@ if (isset($_GET['artist_id'])) {
 
     if (count($result) > 0) {
         $artist_name = $result[0]['artist_name'];
-        $albums = array();
+        $albums = [];
         $current_album_id = null;
         foreach ($result as $row) {
             if ($row['AlbumId'] !== $current_album_id) {
                 $current_album_id = $row['AlbumId'];
-                $album = array(
+                $album = [
                     "id" => $row['AlbumId'],
                     "title" => $row['album_title'],
-                    "tracks" => array()
-                );
+                    "tracks" => []
+                ];
                 $albums[] = $album;
             }
             $album["tracks"][] = $row['track_name'];
         }
-        $response = array(
-            "artist" => $artist_name,
-            "albums" => $albums
-        );
-        echo json_encode($response);
+        return ["artist" => $artist_name, "albums" => $albums];
     } else {
-        echo json_encode(array("error" => "Artist not found."));
+        return ["error" => "Artist not found."];
     }
+}
+
+if (isset($_GET['artist_id'])) {
+    $artist_id = $_GET['artist_id'];
+    $response = getAlbumsByArtistId(createDbConnection(), $artist_id);
+    echo json_encode($response);
 } else {
-    echo json_encode(array("error" => "artist_id is not provided."));
+    echo json_encode(["error" => "artist_id is not provided."]);
 }
 ?>
